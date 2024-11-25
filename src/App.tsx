@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
 import {
   Search,
   Brain,
@@ -15,7 +16,8 @@ import {
   ClipboardCheck,
   Heart,
   Utensils,
-  Zap
+  Zap,
+  LogOut
 } from 'lucide-react';
 import { NavItem } from './components/NavItem';
 import { TopicFilter } from './components/TopicFilter';
@@ -89,6 +91,20 @@ function App() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const auth = useAuth();
+
+  const signOutRedirect = async () => {
+    try {
+      await auth.removeUser();
+      const clientId = "105hvcs5d253pcdp5fdthld61g";
+      const logoutUri = "http://localhost:5173";
+      const cognitoDomain = "https://ap-southeast-2hx1gn8vnd.auth.ap-southeast-2.amazoncognito.com";
+      navigate('/');
+      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    }
+  };
 
   const handleToggleFavorite = (title: string) => {
     setFavorites(prev => {
@@ -103,6 +119,35 @@ function App() {
   };
 
   const favoriteContent = sampleContent.filter(item => favorites.has(item.title));
+
+  if (auth.isLoading) {
+    return <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+      <div className="text-white">Loading...</div>
+    </div>;
+  }
+
+  if (auth.error) {
+    return <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+      <div className="text-white">Error: {auth.error.message}</div>
+    </div>;
+  }
+
+  // If not authenticated, show login screen
+  if (!auth.isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-white text-2xl mb-8">Welcome to ADHD Hub</h1>
+          <button 
+            onClick={() => auth.signinRedirect()}
+            className="bg-accent-purple text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition"
+          >
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-dark-900 text-white flex">
@@ -147,6 +192,14 @@ function App() {
               selectedSubItem={selectedSubItem}
             />
           ))}
+          
+          {/* Add Logout Nav Item */}
+          <NavItem
+            icon={<LogOut size={20} />}
+            text="Sign Out"
+            isOpen={isNavOpen}
+            onClick={() => signOutRedirect()}
+          />
         </nav>
       </div>
 
@@ -166,6 +219,10 @@ function App() {
                 />
                 <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
               </div>
+            </div>
+            {/* Add user email display */}
+            <div className="ml-4 text-sm text-gray-400">
+              {auth.user?.profile.email}
             </div>
           </div>
         </header>
@@ -197,7 +254,6 @@ function App() {
           <Route path="/favorites" element={
             <Favorites
               content={favoriteContent}
-              onContentClick={(title) => console.log('Clicked:', title)}
             />
           } />
           <Route path="/video/:title" element={
@@ -229,11 +285,7 @@ function getTopicIcon(topic: string) {
 }
 
 function AppWrapper() {
-  return (
-    <Router>
-      <App />
-    </Router>
-  );
+  return <App />;
 }
 
 export default AppWrapper;
