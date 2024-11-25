@@ -96,9 +96,9 @@ function App() {
   const signOutRedirect = async () => {
     try {
       await auth.removeUser();
-      const clientId = "105hvcs5d253pcdp5fdthld61g";
-      const logoutUri = "http://localhost:5173";
-      const cognitoDomain = "https://ap-southeast-2hx1gn8vnd.auth.ap-southeast-2.amazoncognito.com";
+      const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID;
+      const logoutUri = import.meta.env.VITE_APP_URL;
+      const cognitoDomain = import.meta.env.VITE_COGNITO_DOMAIN;
       navigate('/');
       window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
     } catch (error) {
