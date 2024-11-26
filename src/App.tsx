@@ -97,7 +97,9 @@ function App() {
     try {
       await auth.removeUser();
       const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID;
-      const logoutUri = import.meta.env.VITE_APP_URL;
+      const logoutUri = import.meta.env.PROD 
+        ? 'https://www.yesigotthis.com'
+        : 'http://localhost:5173';
       const cognitoDomain = import.meta.env.VITE_COGNITO_DOMAIN;
       navigate('/');
       window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;

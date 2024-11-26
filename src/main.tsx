@@ -6,11 +6,16 @@ import App from './App.tsx';
 import './index.css';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
+// Dynamically set the redirect URI based on environment
+const redirectUri = import.meta.env.PROD 
+  ? 'https://www.yesigotthis.com'
+  : 'http://localhost:5173';
+
 const cognitoAuthConfig = {
   authority: import.meta.env.VITE_COGNITO_AUTHORITY,
   client_id: import.meta.env.VITE_COGNITO_CLIENT_ID,
-  redirect_uri: import.meta.env.VITE_APP_URL,
-  post_logout_redirect_uri: import.meta.env.VITE_APP_URL,
+  redirect_uri: redirectUri,
+  post_logout_redirect_uri: redirectUri,
   response_type: "code",
   scope: "email openid phone",
   loadUserInfo: true,
