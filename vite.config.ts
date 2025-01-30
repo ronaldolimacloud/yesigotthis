@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     splitVendorChunkPlugin()
   ],
-  // Add the resolve configuration here
+  base: '/',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -42,10 +42,5 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['react-oidc-context'],
-  },
-  experimental: {
-    renderBuiltUrl(filename: string) {
-      return `/${filename}`;
-    },
   }
 });
