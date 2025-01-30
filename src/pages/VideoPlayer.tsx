@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactPlayer from 'react-player';
 import { BookOpen, Heart, Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
@@ -8,6 +8,15 @@ import { Footer } from '../components/Footer';
 interface VideoPlayerProps {
   favorites?: Set<string>;
   onToggleFavorite?: (title: string) => void;
+}
+
+interface VideoData {
+  title: string;
+  instructor: string;
+  duration: string;
+  topic: string;
+  videoUrl: string;
+  type: 'video' | 'article' | 'audio';
 }
 
 const relatedVideos = [
@@ -56,14 +65,53 @@ export function VideoPlayer({ favorites, onToggleFavorite }: VideoPlayerProps) {
   const [progress, setProgress] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.8);
+  const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const videoData = {
-    title: decodedTitle,
-    instructor: "Dr. Sarah Johnson",
-    duration: "45 minutes",
-    topic: "Focus & Organization",
-    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-  };
+  useEffect(() => {
+    const fetchVideoData = async () => {
+      try {
+        setIsLoading(true);
+        // Replace with your actual API endpoint
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/content/${encodeURIComponent(decodedTitle)}`);
+        if (!response.ok) throw new Error('Failed to fetch video data');
+        
+        const data = await response.json();
+        setVideoData({
+          title: data.title,
+          instructor: data.instructor || 'Unknown Instructor',
+          duration: data.duration || '0:00',
+          topic: data.topic,
+          videoUrl: `https://${import.meta.env.VITE_S3_BUCKET}.s3.${import.meta.env.VITE_AWS_REGION}.amazonaws.com/videos/${data.s3Key}`,
+          type: data.type
+        });
+      } catch (err) {
+        console.error('Error fetching video:', err);
+        setError('Failed to load video');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVideoData();
+  }, [decodedTitle]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-dark-900 flex items-center justify-center">
+        <div className="text-accent-purple">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || !videoData) {
+    return (
+      <div className="flex-1 bg-dark-900 flex items-center justify-center">
+        <div className="text-red-500">{error || 'Video not found'}</div>
+      </div>
+    );
+  }
 
   const handlePlayPause = () => setIsPlaying(!isPlaying);
   const handleMute = () => setIsMuted(!isMuted);
@@ -100,6 +148,14 @@ export function VideoPlayer({ favorites, onToggleFavorite }: VideoPlayerProps) {
               muted={isMuted}
               volume={volume}
               onProgress={({ played }) => setProgress(played * 100)}
+              config={{
+                file: {
+                  attributes: {
+                    crossOrigin: "anonymous"
+                  },
+                  forceVideo: true
+                }
+              }}
             />
             
             {/* Custom Controls */}
